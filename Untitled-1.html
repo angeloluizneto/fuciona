@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pergunta</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', sans-serif;
+            background-color: #e0f7fa;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 {
+            font-size: 36px;
+            color: #00796b;
+            text-shadow: 2px 2px #004d40;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            border: 2px solid #00796b;
+            background-color: #80deea;
+            color: #004d40;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        button:hover {
+            background-color: #4db6ac;
+            transform: scale(1.1);
+        }
+        #nao {
+            position: relative;
+        }
+        #mensagem {
+            font-size: 30px;
+            color: #1976d2;
+            font-weight: bold;
+            text-shadow: 1px 1px #0d47a1;
+            position: absolute;
+            top: -100px; /* Começa fora da tela */
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            z-index: 10; /* Garante que a mensagem fique sobre os botões */
+        }
+        /* Animação de movimento da mensagem */
+        @keyframes moveToCenter {
+            0% {
+                top: -100px;
+                opacity: 0;
+            }
+            50% {
+                top: 50%;
+                opacity: 1;
+            }
+            100% {
+                top: 50%;
+                opacity: 1;
+            }
+        }
+        .animate-message {
+            animation: moveToCenter 2s ease-in-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mamãe, me dá 10 reais?</h1>
+    <button id="sim">Sim</button>
+    <button id="nao">Não</button>
+    
+    <p id="mensagem">Te amo muito!!!!!</p>
+
+    <script>
+        const naoBtn = document.getElementById('nao');
+        const mensagem = document.getElementById('mensagem');
+
+        // Função para mover o botão "Não" para uma posição aleatória
+        naoBtn.addEventListener('mouseover', function() {
+            const x = Math.random() * (window.innerWidth - naoBtn.offsetWidth);
+            const y = Math.random() * (window.innerHeight - naoBtn.offsetHeight - 100); // Limita a altura para evitar sobreposição
+            naoBtn.style.position = 'absolute';
+            naoBtn.style.left = `${x}px`;
+            naoBtn.style.top = `${y}px`;
+        });
+
+        // Exibe e anima a mensagem "Te amo muito!!!!!" ao clicar em "Sim"
+        document.getElementById('sim').addEventListener('click', function() {
+            mensagem.classList.add('animate-message');
+        });
+    </script>
+</body>
+</html>
