@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Obstáculos</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
+        }
+
+        canvas {
+            border: 1px solid #fff;
+        }
+
+        #gameOverScreen {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-align: center;
+        }
+
+        #restartButton {
+            padding: 10px;
+            background-color: blue;
+            color: white;
+            cursor: pointer;
+        }
+
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 20px; /* Ajuste o tamanho da fonte conforme necessário */
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <div id="score">Score: <span id="scoreValue">0</span></div>
+    <div id="gameOverScreen">
+        <h1>Game Over</h1>
+        <p>Score: <span id="finalScore"></span></p>
+        <p>High Score: <span id="highScore"></span></p>
+        <button id="restartButton">Restart</button>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScore = document.getElementById('finalScore');
+        const highScoreElement = document.getElementById('highScore');
+        const restartButton = document.getElementById('restartButton');
+        const scoreValue = document.getElementById('scoreValue');
+
+        let smileSound = new Audio('smile-sound.mp3');
+        let gameOverSound = new Audio('game-over-sound.mp3');
+
+        let player = {
+            x: 50,
+            y: canvas.height - 50,
+            width: 30,
+            height: 30,
+            jump: false,
+            velocityY: 0,
+            speed: 5,
+            jumpCount: 0,
+            maxJumpCount: 6,
+            fallSpeed: 5,
+            zigzagDirection: 1,
+            rotation: 0,
+            smile: false
+        };
+
+        let particles = [];
+        let obstacles = [];
+        let score = 0;
+        let highScore = 0;
+        let gameOver = false;
+
+        const obstacleTypes = [
+            { width: 20, height: Math.random() * 50 + 20, color: 'green' },
+            { width: 30, height: Math.random() * 30 + 20, color: 'red' },
+            { width: 15, height: Math.random() * 40 + 20, color: 'blue' },
+            { width: 25, height: Math.random() * 60 + 20, color: 'purple' },
+            { width: 40, height: Math.random() * 30 + 20, color: 'orange' }
+        ];
+
+        function restartGame() {
+            player = {
+                x: 50,
+                y: canvas.height - 50,
+                width: 30,
+                height: 30,
+                jump: false,
+                velocityY: 0,
+                speed: 5,
+                jumpCount: 0,
+                maxJumpCount: 6,
+                fallSpeed: 5,
+                zigzagDirection: 1,
+                rotation: 0,
+                smile: false
+            };
+            particles = [];
+            obstacles = [];
+            score = 0;
+            gameOver = false;
+            gameOverScreen.style.display = 'none';
+            scoreValue.textContent = score; // Reinicia o valor da pontuação
+            update();
+        }
+
+        function createObstacle() {
+            const obstacleType = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+            obstacles.push({
+                x: canvas.width,
+                y: canvas.height - obstacleType.height,
+                width: obstacleType.width,
+                height: obstacleType.height,
+                color: obstacleType.color
+            });
+        }
+
+        function createParticles() {
+            for (let i = 0; i < 5; i++) {
+                particles.push({
+                    x: player.x + player.width / 2,
+                    y: player.y + player.height / 2,
+                    velocityX: (Math.random() - 0.5) * 2,
+                    velocityY: (Math.random() - 0.5) * 2,
+                    life: 30
+                });
+            }
+        }
+
+        canvas.addEventListener('click', (event) => {
+            if (event.button === 0) {
+                if (player.jumpCount < player.maxJumpCount) {
+                    player.jump = true;
+                    player.jumpCount++;
+                    createParticles();
+                }
+            } else if (event.button === 2) {
+                player.x += player.zigzagDirection * 10;
+                player.y += player.fallSpeed;
+                player.zigzagDirection *= -1;
+                createParticles();
+            }
+        });
+
+        canvas.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+        });
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let particle = particles[i];
+                particle.x += particle.velocityX;
+                particle.y += particle.velocityY;
+                particle.life--;
+
+                if (particle.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function drawFace(x, y) {
+            ctx.fillStyle = 'yellow';
+            ctx.fillRect(x + 5, y + 5, 20, 20);
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(x + 8, y + 8, 4, 4);
+            ctx.fillRect(x + 18, y + 8, 4, 4);
+            
+            // Boca
+            ctx.fillStyle = 'blue';
+            if (player.smile) {
+                ctx.fillRect(x + 10, y + 15, 10, 3); // Sorriso
+            } else {
+                ctx.fillRect(x + 10, y + 15, 10, 1); // Boca neutra
+            }
+        }
+
+        function update() {
+            if (gameOver) return;
+
+            if (player.jump) {
+                player.velocityY = -10;
+                player.jump = false;
+                player.rotation = 0;
+            }
+
+            player.velocityY += 0.5; // Gravidade
+            player.y += player.velocityY;
+
+
+    // Atualiza a rotação durante o salto
+    if (player.jumpCount > 0) {
+        player.rotation += 22.5; // Aumenta a rotação para simular giro de 90 graus
+        if (player.rotation >= 90) {
+            player.rotation = 0; // Reseta a rotação após completar o giro
+        }
+    }
+
+            if (player.y > canvas.height - player.height) {
+                player.y = canvas.height - player.height;
+                player.velocityY = 0;
+                player.jumpCount = 0;
+            }
+
+            // Verifica se o jogador deve sorrir a cada 10 pontos
+            if (score > 0 && score % 10 === 0) {
+                player.smile = true; // Ativa o sorriso
+                smileSound.play(); // Reproduz o som do sorriso
+            } else {
+                player.smile = false; // Desativa o sorriso
+            }
+
+            for (let i = 0; i < obstacles.length; i++) {
+                obstacles[i].x -= 5;
+
+                if (
+                    player.x < obstacles[i].x + obstacles[i].width &&
+                    player.x + player.width > obstacles[i].x &&
+                    player.y < obstacles[i].y &&
+                    player.y + player.height > obstacles[i].y - obstacles[i].height
+                ) {
+                    gameOverSound.play();
+                    gameOver = true;
+                    finalScore.textContent = score;
+                    highScoreElement.textContent = Math.max(score, highScore);
+                    highScore = Math.max(score, highScore);
+                    gameOverScreen.style.display = 'block';
+                    return;
+                }
+
+                if (obstacles[i].x + obstacles[i].width < 0) {
+                    obstacles.splice(i, 1);
+                    score++;
+                    scoreValue.textContent = score; // Atualiza a pontuação na tela
+                    i--;
+                }
+            }
+
+            updateParticles();
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'yellow'; // Cor do corpo do jogador
+            ctx.fillRect(player.x, player.y, player.width, player.height); // Desenha o jogador
+
+            drawFace(player.x, player.y); // Desenha a carinha do jogador
+
+            // Desenha os obstáculos
+            for (let obstacle of obstacles) {
+                ctx.fillStyle = obstacle.color;
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            }
+
+            ctx.fillStyle = 'brown';
+            for (let particle of particles) {
+                ctx.fillRect(particle.x, particle.y, 5, 5);
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        restartButton.addEventListener('click', restartGame);
+
+        setInterval(createObstacle, 2000); // Cria obstáculos a cada 2 segundos
+        update(); // Inicia o loop de atualização
+    </script>
+</body>
+</html>
